@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 
 import static org.assertj.core.api.Assertions.*;
+import static inflearn.querydsl.entity.QMember.*;
 
 @SpringBootTest
 @Transactional
@@ -56,12 +57,10 @@ public class QuerydslBasicTest {
 
     @Test // Querydsl 테스트
     public void startQuerydsl() {
-        QMember m = new QMember("m"); // 어떤 QMember 인지 구분하기 위해 'm' 이라는 이름으로 설정
-
         Member findMember = queryFactory
-                .select(m)
-                .from(m)
-                .where(m.username.eq("member1")) // PreparedStatement 를 통한 자동 파라미터 바인딩 처리
+                .select(member)
+                .from(member)
+                .where(member.username.eq("member1")) // PreparedStatement 를 통한 자동 파라미터 바인딩 처리
                 .fetchOne();
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
