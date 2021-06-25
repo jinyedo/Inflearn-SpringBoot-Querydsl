@@ -22,8 +22,12 @@ public class QuerydslBasicTest {
     @Autowired
     EntityManager em;
 
+    JPQLQueryFactory queryFactory;
+
     @BeforeEach
     public void before() {
+        queryFactory = new JPAQueryFactory(em);
+
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
         em.persist(teamA);
@@ -52,7 +56,6 @@ public class QuerydslBasicTest {
 
     @Test // Querydsl 테스트
     public void startQuerydsl() {
-        JPQLQueryFactory queryFactory = new JPAQueryFactory(em); // EntityManager 로 QueryFactory 새성
         QMember m = new QMember("m"); // 어떤 QMember 인지 구분하기 위해 'm' 이라는 이름으로 설정
 
         Member findMember = queryFactory
