@@ -74,4 +74,30 @@ public class QuerydslBasicTest {
     // PreparedStatement 를 통한 자동 파라미터 바인딩 처리 방식을 사용하기 때문에 SQL Injection 공격을 막을 수 있음
     // 코드로 작성하기 컴파일 시점에서 오류를 확인할 수 있음 - 문법 오류 방지
 
+    @Test
+    public void search() {
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1")
+                        .and(member.age.eq(10))) // 이름이 member1 이고 나이가 10
+                // .where(QMember.member.username.eq("member1")
+                        // .or(QMember.member.age.eq(10))) 이름이 member1 이거나 나이가 10
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void searchAndParam() {
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(
+                    member.username.eq("member1"),
+                    member.age.eq(10)
+                )
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
 }
