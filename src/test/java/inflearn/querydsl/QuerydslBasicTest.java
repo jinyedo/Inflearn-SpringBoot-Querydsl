@@ -1,5 +1,6 @@
 package inflearn.querydsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.JPQLQueryFactory;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import inflearn.querydsl.entity.Member;
@@ -12,6 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static inflearn.querydsl.entity.QMember.*;
@@ -74,7 +77,7 @@ public class QuerydslBasicTest {
     // PreparedStatement 를 통한 자동 파라미터 바인딩 처리 방식을 사용하기 때문에 SQL Injection 공격을 막을 수 있음
     // 코드로 작성하기 컴파일 시점에서 오류를 확인할 수 있음 - 문법 오류 방지
 
-    @Test
+    @Test // 검색 조건 쿼리 테스트1
     public void search() {
         Member findMember = queryFactory
                 .selectFrom(member)
@@ -87,7 +90,7 @@ public class QuerydslBasicTest {
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
-    @Test
+    @Test // 검색 조건 쿼리 테스트2
     public void searchAndParam() {
         Member findMember = queryFactory
                 .selectFrom(member)
@@ -100,4 +103,34 @@ public class QuerydslBasicTest {
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
+    @Test // 결과 조회 테스트
+    public void resultFetch() {
+        // List
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        // 단건
+        Member fetchOne = queryFactory
+                .selectFrom(member)
+                .fetchOne();
+
+        // 처음 한 건 조회
+        Member fetchFirst = queryFactory
+                .selectFrom(member)
+                .fetchFirst();
+
+        // 페이징에서 사용
+        // 쿼리 두 번 실행 - count 쿼리 실행 후 select 쿼리 실행
+        QueryResults<Member> fetchResults = queryFactory
+                .selectFrom(member)
+                .fetchResults();
+        long total = fetchResults.getTotal(); // count 개수
+        List<Member> content = fetchResults.getResults(); // 데이터 꺼내오기
+
+        // count 쿼리로 변경
+        long fetchCount = queryFactory
+                .selectFrom(member)
+                .fetchCount();
+    }
 }
