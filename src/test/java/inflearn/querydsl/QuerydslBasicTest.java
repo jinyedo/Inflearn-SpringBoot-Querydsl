@@ -2,6 +2,8 @@ package inflearn.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -9,6 +11,7 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQueryFactory;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import inflearn.querydsl.dto.MemberDTO;
+import inflearn.querydsl.dto.UserDTO;
 import inflearn.querydsl.entity.Member;
 import inflearn.querydsl.entity.QMember;
 import inflearn.querydsl.entity.QTeam;
@@ -546,6 +549,87 @@ public class QuerydslBasicTest {
 
         for (MemberDTO memberDTO : result) {
             System.out.println("memberDTO : " + memberDTO);
+        }
+    }
+
+    @Test // Setter 를 활용한 프로퍼티 접근
+    public void findDtoBySetter() {
+        List<MemberDTO> result = queryFactory
+                // com.querydsl.core.types.Projections 사용
+                // Projections.bean(타입지정, 꺼내올 값1, 꺼내올 값2, ...)
+                .select(Projections.bean(MemberDTO.class,
+                        member.username,
+                        member.age)
+                )
+                .from(member)
+                .fetch();
+
+        for (MemberDTO memberDTO : result) {
+            System.out.println(memberDTO);
+        }
+    }
+
+    @Test // 필드 직접 접근 - getter, setter 가 없어도 가능
+    public void findDtoByField() {
+        List<MemberDTO> result = queryFactory
+                .select(Projections.fields(MemberDTO.class,
+                        member.username,
+                        member.age)
+                )
+                .from(member)
+                .fetch();
+
+        for (MemberDTO memberDTO : result) {
+            System.out.println(memberDTO);
+        }
+    }
+
+    @Test
+    public void findUserDto() {
+        List<UserDTO> result = queryFactory
+                // Member 와 UserDTO 의 이름이 다를경우 as()를 통해 별칭 지정
+                .select(Projections.fields(UserDTO.class,
+                        member.username.as("name"),
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (UserDTO userDTO : result) {
+            System.out.println(userDTO);
+        }
+    }
+
+    @Test // 서브쿼리를 사용하여 이름이 없을 때
+    public void findUserDto2() {
+        QMember memberSub = new QMember("memberSUb");
+
+        List<UserDTO> result = queryFactory
+                .select(Projections.fields(UserDTO.class,
+                        member.username.as("name"),
+                        ExpressionUtils.as(JPAExpressions
+                                .select(memberSub.age.max())
+                                .from(memberSub), "age")
+                ))
+                .from(member)
+                .fetch();
+
+        for (UserDTO userDTO : result) {
+            System.out.println(userDTO);
+        }
+    }
+
+    @Test // 생성자 사용
+    public void findDtoByConstructor() {
+        List<UserDTO> result = queryFactory
+                .select(Projections.constructor(UserDTO.class,
+                        member.username,
+                        member.age)
+                )
+                .from(member)
+                .fetch();
+
+        for (UserDTO memberDTO : result) {
+            System.out.println(memberDTO);
         }
     }
 }
