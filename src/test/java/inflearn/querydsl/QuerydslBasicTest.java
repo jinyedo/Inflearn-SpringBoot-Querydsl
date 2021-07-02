@@ -1,5 +1,6 @@
 package inflearn.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
@@ -644,5 +645,32 @@ public class QuerydslBasicTest {
         for (MemberDTO memberDTO : result) {
             System.out.println(memberDTO);
         }
+    }
+
+    @Test // 동적 쿼리 테스트 1 - BooleanBuilder 사용하기
+    public void dynamicQuery_BooleanBuilder() {
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember1(usernameParam, ageParam);
+        for (Member member : result) {
+            System.out.println(member);
+        }
+    }
+
+    // 파라미터 값에 따라 동적으로 결과 반환하기
+    private List<Member> searchMember1(String usernameParam, Integer ageParam) {
+        //  new BooleanBuilder(member.username.eq(usernameParam)); 기본 초기 조건도 넣을 수 있음
+        BooleanBuilder builder = new BooleanBuilder();
+        if (usernameParam != null) {
+            builder.and(member.username.eq(usernameParam));
+        }
+        if (ageParam != null) {
+            builder.and(member.age.eq(ageParam));
+        }
+        return queryFactory
+                .selectFrom(member)
+                .where(builder)
+                .fetch();
     }
 }
