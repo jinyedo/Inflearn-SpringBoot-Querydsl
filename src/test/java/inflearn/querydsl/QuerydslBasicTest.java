@@ -620,15 +620,15 @@ public class QuerydslBasicTest {
 
     @Test // 생성자 사용
     public void findDtoByConstructor() {
-        List<UserDTO> result = queryFactory
-                .select(Projections.constructor(UserDTO.class,
+        List<MemberDTO> result = queryFactory
+                .select(Projections.constructor(MemberDTO.class,
                         member.username,
                         member.age)
                 )
                 .from(member)
                 .fetch();
 
-        for (UserDTO memberDTO : result) {
+        for (MemberDTO memberDTO : result) {
             System.out.println(memberDTO);
         }
     }
