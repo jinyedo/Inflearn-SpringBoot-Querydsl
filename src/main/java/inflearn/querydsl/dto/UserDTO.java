@@ -1,5 +1,6 @@
 package inflearn.querydsl.dto;
 
+import com.querydsl.core.annotations.QueryProjection;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +10,7 @@ public class UserDTO {
     private String name;
     private int age;
 
+    @QueryProjection
     public UserDTO(String name, int age) {
         this.name = name;
         this.age = age;
