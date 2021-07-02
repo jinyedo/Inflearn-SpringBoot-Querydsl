@@ -3,6 +3,7 @@ package inflearn.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQueryFactory;
@@ -503,6 +504,31 @@ public class QuerydslBasicTest {
             Integer age = tuple.get(member.age);
             Integer rank = tuple.get(rankPath);
             System.out.println("username : " + username + " | age : " + age + " | rank : " + rank);
+        }
+    }
+
+    @Test // 상수 더하기 - 상수가 필요하면 Expressions.constant(xxx)를 사용
+    public void constant() {
+        List<Tuple> result = queryFactory
+                .select(member.username, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println(tuple);
+        }
+    }
+
+    @Test // 문자 더하기
+    public void concat() {
+        // username_age 형식으로 출력하기
+        List<String> result = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println(s);
         }
     }
 }
