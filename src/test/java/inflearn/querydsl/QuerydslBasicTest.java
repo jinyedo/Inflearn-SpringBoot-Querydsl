@@ -8,6 +8,7 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQueryFactory;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import inflearn.querydsl.dto.MemberDTO;
 import inflearn.querydsl.entity.Member;
 import inflearn.querydsl.entity.QMember;
 import inflearn.querydsl.entity.QTeam;
@@ -529,6 +530,22 @@ public class QuerydslBasicTest {
 
         for (String s : result) {
             System.out.println(s);
+        }
+    }
+
+    @Test // 순수 JPA 에서 DTO 조회
+    public void findDtoByJPQL() {
+
+        /* em.createQuery("select m from Member m", MemberDTO.class);
+         * 이렇게 하면 Member 엔티티를 조회하기 떄문에 타입이 맞지 않아 오류가 발생
+         * new operation 을 사용해야 한다.
+         */
+        List<MemberDTO> result = em.createQuery(
+                "select new inflearn.querydsl.dto.MemberDTO(m.username, m.age) from Member m", MemberDTO.class)
+                .getResultList();
+
+        for (MemberDTO memberDTO : result) {
+            System.out.println("memberDTO : " + memberDTO);
         }
     }
 }
