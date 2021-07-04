@@ -4,7 +4,9 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -647,30 +649,46 @@ public class QuerydslBasicTest {
         }
     }
 
-    @Test // 동적 쿼리 테스트 1 - BooleanBuilder 사용하기
+    @Test // 동적 쿼리 테스트  - BooleanBuilder, Where 다중 파라미터 사용하기
     public void dynamicQuery_BooleanBuilder() {
         String usernameParam = "member1";
         Integer ageParam = 10;
 
-        List<Member> result = searchMember1(usernameParam, ageParam);
+        // List<Member> result = searchMember1(usernameParam, ageParam); BooleanBuilder 사용하기
+         List<Member> result = searchMember2(usernameParam, ageParam); // Where 다중 파라미터 사용하기
         for (Member member : result) {
             System.out.println(member);
         }
     }
 
-    // 파라미터 값에 따라 동적으로 결과 반환하기
+    // BooleanBuilder 를 사용하여 파라미터 값에 따라 동적으로 결과 반환하기
     private List<Member> searchMember1(String usernameParam, Integer ageParam) {
         //  new BooleanBuilder(member.username.eq(usernameParam)); 기본 초기 조건도 넣을 수 있음
         BooleanBuilder builder = new BooleanBuilder();
-        if (usernameParam != null) {
-            builder.and(member.username.eq(usernameParam));
-        }
-        if (ageParam != null) {
-            builder.and(member.age.eq(ageParam));
-        }
+        if (usernameParam != null) builder.and(member.username.eq(usernameParam));
+        if (ageParam != null) builder.and(member.age.eq(ageParam));
         return queryFactory
                 .selectFrom(member)
                 .where(builder)
                 .fetch();
+    }
+
+    // Where 다중 파라미터를 사용하여 파라미터 값에 따라 동적으로 결과 반환하기
+    private List<Member> searchMember2(String usernameParam, Integer ageParam) {
+        return queryFactory
+                .selectFrom(member)
+//                .where(usernameEq(usernameParam), ageEq(ageParam)) // null 이 반환되면 그냥 무시한다.
+                .where(allEq(usernameParam, ageParam))
+                .fetch();
+    }
+    private BooleanExpression usernameEq(String usernameParam) {
+        return usernameParam != null ? member.username.eq(usernameParam) : null;
+    }
+    private BooleanExpression ageEq(Integer ageParam) {
+        return ageParam != null ? member.age.eq(ageParam) : null;
+    }
+    // 조합해서 사용 가능
+    private BooleanExpression allEq(String usernameParam, Integer ageParam) {
+        return usernameEq(usernameParam).and(ageEq(ageParam));
     }
 }
