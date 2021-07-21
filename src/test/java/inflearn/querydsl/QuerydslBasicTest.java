@@ -4,7 +4,6 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
-import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
@@ -18,24 +17,23 @@ import inflearn.querydsl.dto.QMemberDTO;
 import inflearn.querydsl.dto.UserDTO;
 import inflearn.querydsl.entity.Member;
 import inflearn.querydsl.entity.QMember;
-import inflearn.querydsl.entity.QTeam;
 import inflearn.querydsl.entity.Team;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
-
 import java.util.List;
 
-import static com.querydsl.jpa.JPAExpressions.*;
-import static inflearn.querydsl.entity.QTeam.*;
-import static org.assertj.core.api.Assertions.*;
-import static inflearn.querydsl.entity.QMember.*;
+import static com.querydsl.jpa.JPAExpressions.select;
+import static inflearn.querydsl.entity.QMember.member;
+import static inflearn.querydsl.entity.QTeam.team;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
@@ -690,5 +688,123 @@ public class QuerydslBasicTest {
     // 조합해서 사용 가능
     private BooleanExpression allEq(String usernameParam, Integer ageParam) {
         return usernameEq(usernameParam).and(ageEq(ageParam));
+    }
+
+    @Test // 벌크 연산 테스트 1 - update
+    @Commit
+    public void bulkUpdate() {
+        /* 28살 미만인 회원의 이름을 "비회원" 으로 update 해라
+         * member1 -> 비회원
+         * member2 -> 비회원
+         * member3 -> 유지
+         * member4 -> 유지
+         */
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        // 그 후 아래 코드를 실행하면 ?
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member : result) {
+            System.out.println(member);
+            /* 실행결과
+             *     Member(id=3, username=member1, age=10)
+             *     Member(id=4, username=member2, age=20)
+             *     Member(id=5, username=member3, age=30)
+             *     Member(id=6, username=member4, age=40)
+             *
+             * DB에 저장된 값
+             *     Member(id=3, username=비회원, age=10)
+             *     Member(id=4, username=비회원, age=20)
+             *     Member(id=5, username=member3, age=30)
+             *     Member(id=6, username=member4, age=40)
+             *
+             * 실행 결과와 DB에 저장된 값이 다르다 ???
+             * "그 이유는 벌크 연산은 영속성 컨텍스트를 무시하고 DB에 직접 쿼리를 날리기 때문"
+             *
+             * JPA 는 기본적으로 영속성 컨텍스트에 엔티티들이 올라가 있다.
+             * 하지만 벌크 연산은 영속성 컨텍스를 무시하고 DB에 바로 쿼리가 날라간다.
+             * 그렇기 떄문에 DB 의 상태와 영속성 컨텍스트의 상태가 달라져 버린다.
+             * => 영속성 컨텍스트 : Member(id=1, username=member1, age=10) | DB : Member(id=1, username=비회원, age=10)
+             *
+             *  JPA 는 기본적으로 DB 에서 가져온 결과를 영속성 컨텍스트에 다시 넣어주어야 한다.
+             * 하지만 영속성 컨텍스트에는 값이 있기 때문에
+             * JPA 는 DB 에서 Select 를 해왔어도
+             * 영속성 컨텍스트에 존재하면 DB 에서 가져온 값들을 버린다. => "영속성 컨텍스트가 우선권을 갖는다."
+             */
+        }
+
+
+    }
+
+    @Test // 벌크 연산 테스트 2 - 위와 같은 문제를 해결하기 위해
+    @Commit
+    public void bulkUpdate2() {
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        em.flush(); // 영속성 컨텍스트에 있는 데이터를 DB로 쿼리 전송 - DB에 반영안됨(!commit)
+        em.clear(); // 영속성 컨텍스트에 있는 데이터를 제거
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member : result) {
+            System.out.println(member);
+            /* 실행 결과 - 정상적으로 update 된 결과가 출력
+             * Member(id=3, username=비회원, age=10)
+             * Member(id=4, username=비회원, age=20)
+             * Member(id=5, username=member3, age=30)
+             * Member(id=6, username=member4, age=40)
+             */
+        }
+    }
+
+    @Test // 벌크 테스트 3 - 기존 나이에 1 더하기
+    @Commit
+    public void bulkAdd() {
+        long count = queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1)) // 더하기
+                .execute();
+
+        em.flush();
+        em.clear();
+
+        List<Member> members = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member : members) {
+            System.out.println(member);
+        }
+    }
+
+    @Test // 벌크 테스트 4 - 나이가 18살 보다 많은 회원 삭제
+    public void bulkDelete() {
+        long count = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+
+        em.flush();
+        em.clear();
+
+        List<Member> members = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member : members) {
+            System.out.println(member);
+        }
     }
 }
